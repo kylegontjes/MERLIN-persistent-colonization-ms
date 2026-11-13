@@ -5,3 +5,5 @@ Code for this manuscript
 ## Notes:
 
 1. Revision to the manuscript shifted reference genome choice for variant calling. Public genomes from GenBank were downloaded and compared to study assemblies to identify candidate reference genomes. Old data, where applicable, has been stored in data/*/deprecated foldres. Comparisons of variant calling results were made in ./scripts/compare_variant_calling_approaches.
+
+2. Updated tables to have superscript and italics to enable easier integration into the manuscript
