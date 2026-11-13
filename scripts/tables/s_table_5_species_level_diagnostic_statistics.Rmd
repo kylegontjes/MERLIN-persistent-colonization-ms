@@ -1,5 +1,5 @@
 ---
-title: "Supplementary Table 6: Species-level diagnostic statistics"
+title: "Table S5: Species-level diagnostic statistics"
 author: "Kyle Gontjes"
 date: "`r Sys.Date()`"
 output: html_document
@@ -37,9 +37,9 @@ comparison_of_any_ESCRE_to_WGS_outcomes <- readRDS("./data/diagnostic_statistics
 
 # Edit column names
 ```{r}
-stable_6 <- comparison_of_any_ESCRE_to_WGS_outcomes %>% select(outcome_rename,tp,fp,tn,fn,sens,spec,ppv,npv,false_persistence_rate,overall_disagreement) 
+stable_5 <- comparison_of_any_ESCRE_to_WGS_outcomes %>% select(outcome_rename,tp,fp,tn,fn,sens,spec,ppv,npv,false_persistence_rate,overall_disagreement) 
 
-colnames(stable_6) <- recode(colnames(stable_6),
+colnames(stable_5) <- recode(colnames(stable_5),
                             'outcome_rename' = 'Criteria',
                             "tp" = "True positives",
                             "fp" = "False positives",
@@ -51,11 +51,11 @@ colnames(stable_6) <- recode(colnames(stable_6),
                             'npv'='Negative predictive value (NPV)',
                             'false_persistence_rate' = "False persistence rate (1-PPV)",
                             "overall_disagreement" = "Overall disagreement (1-accuracy)")
-stable_6 %>% favorite_kable()
+stable_5 %>% favorite_kable()
 ```
 
 # Save table as CSV and RDS file
 ```{r}
-saveRDS(stable_6,"./tables/s_table_6_species_level_diagnostic_statistics.RDS")
-write_csv(stable_6,"./tables/s_table_6_species_level_diagnostic_statistics.csv")
+saveRDS(stable_5,"./tables/s_table_5_species_level_diagnostic_statistics.RDS")
+write_csv(stable_5,"./tables/s_table_5_species_level_diagnostic_statistics.csv")
 ```

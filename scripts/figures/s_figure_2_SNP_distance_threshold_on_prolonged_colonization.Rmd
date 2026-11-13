@@ -1,5 +1,5 @@
 ---
-title: "Supplementary Figure 2: SNP_distance_threshold_on_prolonged_colonization"
+title: "Figure S2: SNP_distance_threshold_on_prolonged_colonization"
 author: "Kyle Gontjes"
 date: "`r Sys.Date()`"
 output: html_document
@@ -82,7 +82,7 @@ A <- ggplot(data = ST_pairs ,
   geom_point(aes(color = prolonged_colonization), size = 1) +
   facet_wrap(~household1, ncol = 5)  +
   theme_bw_me +
-  labs(y     = "SNP distance from index isolate",
+  labs(y     = "SNP distance from index isolate (same ST)",
        x     = "Study visit",
        color = "Persistent colonization") +
   scale_x_discrete(labels = c("1" = "Baseline", "2" = "One\nmonth", "3" = "Two\nmonth")) + scale_color_manual(

@@ -34,7 +34,7 @@ sessionInfo()
 ```{r } 
 df_index <- readRDS("./data/dataset/MERLIN_cohort_index_cases_metadata_final.RDS") 
 prolonged_colonization_df <- readRDS("./data/persistent_colonization/persistent_colonization_episodes/MERLIN_persistent_colonization_index_patients_public_references.RDS")
-clinical_prolonged_colonization <- read_csv("./data/persistent_colonization/deprecated/old/merlin_prolonged_colonization.csv")
+clinical_prolonged_colonization <- read_csv("../../data/merlin_prolonged_colonization_20261105.csv")
 ```
  
 # Get number of positive households with index specimen sequenced
@@ -57,7 +57,15 @@ table(clinical_definition_prolonged %in% ESCrE_index_positive_households)
 ```{r}
 prolonged_melt <- reshape2::melt(prolonged_colonization_df %>% subset(household %in% clinical_definition_prolonged)  %>%  select(household,index_at_1_and_or_2_WGS_escre,index_at_1_and_or_2_Species,index_at_1_and_or_2_Species_ST,index_at_1_and_or_2_Species_ST_cluster,index_at_1_and_or_2_ESCrE_genes,index_at_1_and_or_2_Species_ST_cluster_ESCrE_genes,index_at_1_and_or_2_Species_ST_cluster_ESCrE_genes_plasmid_aware,index_at_1_and_or_2_Species_ST_cluster_ESCrE_genes_plasmid_linked),id.vars="household")
 prolonged_melt$value <- factor(prolonged_melt$value,levels = c(0,1))
-prolonged_melt$variable <- recode(prolonged_melt$variable,'index_at_1_and_or_2_WGS_escre'='Any ESCrE','index_at_1_and_or_2_Species'='Species','index_at_1_and_or_2_Species_ST'='Sequence type','index_at_1_and_or_2_Species_ST_cluster'='Strain','index_at_1_and_or_2_ESCrE_genes'='ESCrE gene','index_at_1_and_or_2_ESCrE_plasmidic_genes'= 'Plasmidic ESCrE gene','index_at_1_and_or_2_ESCrE_plasmids'= 'ESCrE plasmid',
+
+prolonged_melt$variable <- recode(prolonged_melt$variable,
+                                  'index_at_1_and_or_2_WGS_escre'='Any ESCrE',
+                                  'index_at_1_and_or_2_Species'='Species',
+                                  'index_at_1_and_or_2_Species_ST'='Sequence type',
+                                  'index_at_1_and_or_2_Species_ST_cluster'='Strain',
+                                  'index_at_1_and_or_2_ESCrE_genes'='ESCrE gene',
+                                  'index_at_1_and_or_2_ESCrE_plasmidic_genes'= 'Plasmidic ESCrE gene',
+                                  'index_at_1_and_or_2_ESCrE_plasmids'= 'ESCrE plasmid',
   'index_at_1_and_or_2_Species_ST_cluster_ESCrE_genes'='Strain + ESCrE gene',
   'index_at_1_and_or_2_Species_ST_cluster_ESCrE_genes_plasmid_aware'='Strain + plasmid-aware ESCrE gene',
   'index_at_1_and_or_2_Species_ST_cluster_ESCrE_genes_plasmid_linked'='Strain + plasmid-linked ESCrE gene')
@@ -184,5 +192,3 @@ similarity_dataset_index %>%
   filter(threshold %in% edges) %>%
   arrange(threshold) %>% favorite_kable()
 ```
-
-

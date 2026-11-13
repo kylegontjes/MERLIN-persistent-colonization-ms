@@ -1,5 +1,5 @@
 ---
-title: "Supplementary Table 4: Location of ESCrE genes on short-read assemblies"
+title: "Table S4: Location of ESCrE genes on short-read assemblies"
 author: "Kyle Gontjes"
 date: "`r Sys.Date()`"
 output: html_document
@@ -7,8 +7,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 require(knitr)
-opts_knit$set(echo = F,warning = FALSE, message = FALSE,error=F,comment=NA) 
-opts_chunk$set(echo = F,warning = FALSE, message = FALSE,error=F,comment=NA)
+opts_knit$set(echo = T,warning = FALSE, message = FALSE,error=F,comment=NA) 
+opts_chunk$set(echo = T,warning = FALSE, message = FALSE,error=F,comment=NA)
 opts_knit$set(root.dir='~/Desktop/gl_nfs/Project_MERLIN/Analysis/Household_transmission/MERLIN-prolonged-colonization-ms/')
 ```
 
@@ -16,7 +16,7 @@ opts_knit$set(root.dir='~/Desktop/gl_nfs/Project_MERLIN/Analysis/Household_trans
 
 ```{r environment, echo=T, message=FALSE, include=T, results=T}
 #Packages
-packages <- c("tidyverse",'kableExtra') 
+packages <- c("tidyverse","kableExtra",'stringr','flextable','ftExtra')
 
 #Load Packages
 invisible(lapply(packages,library,character.only=T,quietly=T))
@@ -53,7 +53,34 @@ s_table_4 %>% favorite_kable()
 ```
 
 # Save table as CSV and RDS file
+## Raw tables
 ```{r}
 saveRDS(s_table_4,"./tables/s_table_4_ESBL_proportion_plasmidic.RDS")
 write_csv(s_table_4,"./tables/s_table_4_ESBL_proportion_plasmidic.csv")
 ```
+
+## Formatted for word  
+```{r}
+fmt_bla <- function(x) {
+  x |>
+    str_replace_all("\\*", "\\\\*") |>                         # keep literal * (e.g. EC-8*)
+    str_replace_all("bla([A-Za-z0-9\\\\*-]+)", "*bla*~\\1~")   # blaCMY-4 -> *bla*~CMY-4~
+}
+
+fmt_ampc <- function(x) str_replace_all(x, "\\bampC\\b", "*ampC*")
+
+ft <- s_table_4 |>
+  mutate(`ESCrE b-lactamase` = fmt_bla(`ESCrE b-lactamase`),
+         Category = fmt_ampc(Category)) |>
+  flextable() |>
+  colformat_md(j = c("ESCrE b-lactamase", "Category")) |>
+  set_header_labels(`ESCrE b-lactamase` = "ESCrE \u03b2-lactamase") |>
+  fontsize(size = 9, part = "all") |>
+  set_table_properties(layout = "autofit", width = 1)
+
+ft
+
+save_as_docx(ft, 
+             path = "./tables/s_table_4_ESBL_proportion_plasmidic.docx")
+```
+

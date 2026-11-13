@@ -1,0 +1,207 @@
+---
+title: "Results Section 2: Sequence type and phylogroup analyses"
+author: "Kyle Gontjes"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+require(knitr)
+opts_knit$set(echo = F,warning = FALSE, message = FALSE,error=F,comment=NA)
+opts_chunk$set(echo = F,warning = FALSE, message = FALSE,error=F,comment=NA)
+opts_knit$set(root.dir='~/Desktop/gl_nfs/Project_MERLIN/Analysis/Household_transmission/MERLIN-prolonged-colonization-ms/')
+```
+
+# Environment
+
+```{r environment, echo=T, message=FALSE, include=T, results=T}
+#Packages
+packages <- c("tidyverse",'kableExtra')
+
+#Load Packages
+invisible(lapply(packages,library,character.only=T,quietly=T))
+
+# Source library
+source("./lib/consistent_themes.R")
+
+# Print environment
+set.seed(45)
+Sys.info()
+sessionInfo()
+```
+
+# Load data
+```{r }
+df_index <- readRDS("./data/dataset/MERLIN_cohort_index_cases_metadata_final.RDS")
+prolonged_colonization_df <- readRDS("./data/persistent_colonization/persistent_colonization_episodes/MERLIN_persistent_colonization_index_patients_public_references.RDS")
+clinical_raw <- read_csv("../../data/merlin_prolonged_colonization_20261105.csv")
+```
+
+# Tabulate data from sequenced isolates
+```{r}
+collapse_unique <- function(x) {
+  x <- sort(unique(na.omit(x)))
+  if (length(x) == 0) NA_character_ else paste(x, collapse = "; ")
+}
+
+ecoli_sp    <- "Escherichia coli"
+ecoli_st131 <- "Escherichia coli ST 131"
+ecoli_pg    <- "B2"
+
+sequencing_summary <- df_index %>%
+  group_by(household) %>%
+  summarise(
+    # Index (visit 0)
+    no_index_isolate    = as.integer(!any(visit == 0, na.rm = TRUE)),
+    index_species       = collapse_unique(Species[visit == 0]),
+    index_species_ST    = collapse_unique(Species_ST[visit == 0]),
+    ecoli_index         = as.integer(any(Species == ecoli_sp & visit == 0, na.rm = TRUE)),
+    ecoliST131_index    = as.integer(any(Species_ST == ecoli_st131 & visit == 0, na.rm = TRUE)),
+    
+    # Baseline (visit 1)
+    no_baseline_isolate    = as.integer(!any(visit == 1, na.rm = TRUE)),
+    baseline_species       = collapse_unique(Species[visit == 1]),
+    baseline_species_ST    = collapse_unique(Species_ST[visit == 1]),
+    ecoli_baseline     = as.integer(any(Species == ecoli_sp & visit == 1, na.rm = TRUE)),
+    ecoliST131_baseline    = as.integer(any(Species_ST == ecoli_st131 & visit == 1, na.rm = TRUE)),
+    
+    # Any visit
+    all_species_ST      = collapse_unique(Species_ST),
+    any_ecoliST131      = as.integer(any(Species_ST == ecoli_st131, na.rm = TRUE)),
+    
+    # Index or baseline 
+    ecoli_index_or_baseline      = as.integer(any(Species == ecoli_sp & visit %in% c(0, 1), na.rm = TRUE)),
+    ecoliST131_index_or_baseline = as.integer(any(Species_ST == ecoli_st131 & visit %in% c(0, 1), na.rm = TRUE)),
+    
+    # Index-first, baseline fallback (strict)
+    ecoli_index_or_baseline_strict = {
+      has_index <- any(visit == 0, na.rm = TRUE)
+      as.integer(
+        if (has_index) {
+          any(Species == ecoli_sp & visit == 0, na.rm = TRUE)
+        } else {
+          any(Species == ecoli_sp & visit == 1, na.rm = TRUE)
+        }
+      )
+    },
+    ecoliST131_index_or_baseline_strict = {
+      has_index <- any(visit == 0, na.rm = TRUE)
+      as.integer(
+        if (has_index) {
+          any(Species_ST == ecoli_st131 & visit == 0, na.rm = TRUE)
+        } else {
+          any(Species_ST == ecoli_st131 & visit == 1, na.rm = TRUE)
+        }
+      )
+    },
+    ecoliPG_index_or_baseline_strict = {
+      has_index <- any(visit == 0, na.rm = TRUE)
+      as.integer(
+        if (has_index) {
+          any(Species == ecoli_sp & ecoli_phylogroup == ecoli_pg & visit == 0, na.rm = TRUE)
+        } else {
+          any(Species == ecoli_sp & ecoli_phylogroup == ecoli_pg & visit == 1, na.rm = TRUE)
+        }
+      )
+    },
+
+    # 3-category variables (index-first, baseline fallback)
+    ecoli_ST131_cat = {
+      v   <- if (any(visit == 0, na.rm = TRUE)) 0 else 1
+      sel <- !is.na(visit) & visit == v
+      if (!any(sel)) NA_character_
+      else if (any(Species_ST[sel] == ecoli_st131, na.rm = TRUE)) "E. coli ST 131"
+      else if (any(Species[sel] == ecoli_sp, na.rm = TRUE))       "E. coli non-ST131"
+      else "Non-E. coli"
+    },
+    ecoli_PG_cat = {
+      v   <- if (any(visit == 0, na.rm = TRUE)) 0 else 1
+      sel <- !is.na(visit) & visit == v
+      if (!any(sel)) NA_character_
+      else if (any(Species[sel] == ecoli_sp & ecoli_phylogroup[sel] == ecoli_pg, na.rm = TRUE)) "E. coli B2"
+      else if (any(Species[sel] == ecoli_sp, na.rm = TRUE))                                     "E. coli non-B2"
+      else "Non-E. coli"
+    },
+    .groups = "drop"
+  ) %>%
+  mutate(
+    ecoli_ST131_cat = factor(ecoli_ST131_cat, levels = c("E. coli ST 131", "E. coli non-ST131", "Non-E. coli")),
+    ecoli_PG_cat    = factor(ecoli_PG_cat,    levels = c("E. coli B2", "E. coli non-B2", "Non-E. coli"))
+  )
+```
+
+# Merge with clinical data and add fallback to HUP data
+```{r}
+clinical_prolonged_colonization <- clinical_raw %>%
+  left_join(sequencing_summary %>% rename(household_number = household),
+            by = "household_number") %>%
+  mutate(
+    has_index_wgs    = as.integer(no_index_isolate %in% 0),
+    has_baseline_wgs = as.integer(no_baseline_isolate %in% 0),
+    hup_ecoli        = case_when(
+      is.na(hup_id)                             ~ NA_integer_,
+      grepl("coli", hup_id, ignore.case = TRUE) ~ 1L,
+      TRUE                                      ~ 0L
+    ))
+
+for (v in c("ecoli_ST131_cat", "ecoli_PG_cat")) {
+  x <- as.character(clinical_prolonged_colonization[[v]])
+  clinical_prolonged_colonization[[v]] <- ifelse(
+    is.na(x) & clinical_prolonged_colonization$hup_ecoli %in% 0,
+    "Non-E. coli",
+    x
+  )
+}
+```
+
+# Number of E. coli isolates with eligibile follow up
+```{r}
+no_index <- subset(clinical_prolonged_colonization,no_index_isolate==1 |is.na(no_index_isolate))
+
+table(no_index$hup_id,no_index$ecoli_baseline,useNA = 'ifany')
+```
+
+
+# Prolonged colonization by organism
+## Raw prolonged colonization data
+```{r}
+# Raw data
+paste0("HUP data")
+table(clinical_prolonged_colonization$hup_id, useNA = "ifany")
+paste0("HUP data by index WGS")
+table(clinical_prolonged_colonization$hup_id, useNA = "ifany",clinical_prolonged_colonization$index_species)
+# Prolonged by status
+paste0("Prolonged colonizatino by HUP")
+table(clinical_prolonged_colonization$prolonged_colonization, clinical_prolonged_colonization$hup_id, useNA = "ifany")
+paste0("Prolonged colonizatino by E coli WGS index")
+table(clinical_prolonged_colonization$prolonged_colonization, clinical_prolonged_colonization$ecoli_index, useNA = "ifany") 
+paste0("Prolonged colonizatino by E coli WGS index or baseline strict")
+table(clinical_prolonged_colonization$hup_id,clinical_prolonged_colonization$ecoli_index_or_baseline_strict, useNA = "ifany")
+```
+
+## Prolonged by phylogroup and ST131
+
+Note: Excluded the non sequenced E coli subjects
+```{r}
+## Overall
+# PG
+table(clinical_prolonged_colonization$prolonged_colonization, clinical_prolonged_colonization$ecoli_PG_cat)
+table(clinical_prolonged_colonization$prolonged_colonization, clinical_prolonged_colonization$ecoli_PG_cat) %>% fisher.test()
+
+# ST131
+table(clinical_prolonged_colonization$prolonged_colonization, clinical_prolonged_colonization$ecoli_ST131_cat)
+table(clinical_prolonged_colonization$prolonged_colonization, clinical_prolonged_colonization$ecoli_ST131_cat) %>% fisher.test()
+```
+
+## Prolonged by phylogroup and ST131 restricted to just E coli isolatse
+```{r}
+## Ecoli specific
+ecoli_df <- clinical_prolonged_colonization %>% subset(ecoli_PG_cat != "Non-E. coli")
+# PG
+table(ecoli_df$prolonged_colonization, ecoli_df$ecoli_PG_cat)
+table(ecoli_df$prolonged_colonization, ecoli_df$ecoli_PG_cat) %>% fisher.test()
+
+# ST131
+table(ecoli_df$prolonged_colonization, ecoli_df$ecoli_ST131_cat)
+table(ecoli_df$prolonged_colonization, ecoli_df$ecoli_ST131_cat) %>% fisher.test()
+```

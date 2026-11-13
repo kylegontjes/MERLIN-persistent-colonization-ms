@@ -1,5 +1,5 @@
 ---
-title: "Supplementary Figure 3: Cognac phylogenies"
+title: "Figure S3: Cognac phylogenies"
 author: "Kyle Gontjes"
 date: "`r Sys.Date()`"
 output: html_document

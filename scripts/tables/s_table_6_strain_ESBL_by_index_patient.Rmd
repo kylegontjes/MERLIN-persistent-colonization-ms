@@ -1,5 +1,5 @@
 ---
-title: "Supplementary Table 5: Strain and ESBL gene presence stratified by household"
+title: "Table S6: Strain and ESBL gene presence stratified by household"
 author: "Kyle Gontjes"
 date: "`r Sys.Date()`"
 output: html_document
@@ -16,7 +16,7 @@ opts_knit$set(root.dir='~/Desktop/gl_nfs/Project_MERLIN/Analysis/Household_trans
 
 ```{r environment, echo=T, message=FALSE, include=T, results=T}
 #Packages
-packages <- c("tidyverse",'kableExtra') 
+packages <- c("tidyverse",'kableExtra','flextable','ftExtra') 
 
 #Load Packages
 invisible(lapply(packages,library,character.only=T,quietly=T))
@@ -44,7 +44,7 @@ df_index <- left_join(df_index,plasmid_data)
 ```{r}
 df_index$household_numeric <- gsub("H","",df_index$household) %>% as.numeric
   
-s_table_5 <- df_index %>% arrange(household_numeric,visit,Species_ST_cluster) %>% select(household, visit, Species_ST_cluster, bla_genes, ESCrE_genes, ESCrE_chromosome_genes, ESCrE_plasmid_genes, plasmids,ESCrE_plasmids) %>% mutate(bla_genes = gsub(";", ", ", bla_genes),
+s_table_6 <- df_index %>% arrange(household_numeric,visit,Species_ST_cluster) %>% select(household, visit, Species_ST_cluster, bla_genes, ESCrE_genes, ESCrE_chromosome_genes, ESCrE_plasmid_genes, plasmids,ESCrE_plasmids) %>% mutate(bla_genes = gsub(";", ", ", bla_genes),
                                                                                                                                                                                                                                         plasmids = gsub(";", ", ", plasmids),
                                                                                                                                                                                                                                         ESCrE_genes = gsub(";",", ",ESCrE_genes),
                                                                                                                                                                                                                                         ESCrE_chromosome_genes = gsub(";", ", ",ESCrE_chromosome_genes),
@@ -61,10 +61,73 @@ s_table_5 <- df_index %>% arrange(household_numeric,visit,Species_ST_cluster) %>
 ```
 
 ```{r}
-favorite_kable(s_table_5)
+favorite_kable(s_table_6)
 ```
 
+# Save table
+
+## Raw table
+
 ```{r}
-saveRDS(s_table_5,"./tables/s_table_5_strain_ESCrE_genes_by_index_patient.RDS")
-write_csv(s_table_5,"./tables/s_table_5_strain_ESCrE_genes_by_index_patient.csv")
+saveRDS(s_table_6,"./tables/s_table_6_strain_ESCrE_genes_by_index_patient.RDS")
+write_csv(s_table_6,"./tables/s_table_6_strain_ESCrE_genes_by_index_patient.csv")
+```
+
+## Formatted for word
+
+```{r}
+# β-lactamase columns
+bla_cols <- c("Detected b-lactamase(s)",
+              "Detected ESCrE b-lactamase(s)",
+              "Chromosome-inferred ESCrE b-lactamase(s)",
+              "Plasmid-inferred ESCrE b-lactamase(s)")
+
+# Build one cell: italic "bla" + subscript remainder, plain ", " between genes
+bla_chunks <- function(s) {
+  if (is.na(s) || str_trim(s) %in% c("", "-", "NA")) return(list(as_chunk("")))
+  genes <- str_split(str_trim(s), "\\s*,\\s*")[[1]]
+  out <- list()
+  for (k in seq_along(genes)) {
+    g <- genes[k]
+    if (str_detect(g, "^bla")) {
+      out <- c(out, list(as_i("bla"), as_sub(str_remove(g, "^bla"))))
+    } else {
+      out <- c(out, list(as_chunk(g)))
+    }
+    if (k < length(genes)) out <- c(out, list(as_chunk(", ")))
+  }
+  out
+}
+
+italic_species <- function(x) {
+  x |>
+    str_replace("^([A-Z][a-z]+ [a-z]+)\\b(?!\\.)", "*\\1*") |>
+    str_replace("^([A-Z][a-z]+)(?= spp?\\.)", "*\\1*")
+}
+
+# Strain: italic species via markdown
+ft <- s_table_6 |>
+  mutate(Strain = italic_species(Strain)) |>
+  flextable() |>
+  colformat_md(j = "Strain")
+
+# Gene columns: set each cell's contents directly
+for (col in bla_cols) {
+  for (r in seq_len(nrow(s_table_6))) {
+    ft <- mk_par(ft, i = r, j = col,
+                 value = as_paragraph(list_values = bla_chunks(s_table_6[[col]][r])))
+  }
+}
+
+# Headers and layout: continue from the same ft
+ft <- ft |>
+  set_header_labels(values = setNames(str_replace_all(names(s_table_6), "b-lactamase", "\u03b2-lactamase"),
+                                      names(s_table_6))) |>
+  fontsize(size = 8, part = "all") |>
+  set_table_properties(layout = "autofit", width = 1)
+
+ft
+
+save_as_docx(ft, 
+             path = "./tables/s_table_6_strain_ESCrE_genes_by_index_patient.docx")
 ```
