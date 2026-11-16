@@ -122,10 +122,10 @@ s_figure_1A
 ```{r,fig.width=8,fig.height=6} 
 overall_pair_types_index$group1 <- ifelse(overall_pair_types_index$Species1 != 'Escherichia coli',
                                           overall_pair_types_index$Species1,
-                                          ifelse(overall_pair_types_index$Species1 == "Escherichia coli" & overall_pair_types_index$Species_ST1 == "Escherichia coli ST 131","Escherichia coli ST 131","Escherichia coli Non-ST 131"))
+                                          ifelse(overall_pair_types_index$Species1 == "Escherichia coli" & overall_pair_types_index$Species_ST1 == "Escherichia coli ST 131","Escherichia coli ST131","Escherichia coli Non-ST131"))
 overall_pair_types_index$group2 <- ifelse(overall_pair_types_index$Species2 != 'Escherichia coli',
                                           overall_pair_types_index$Species2,
-                                          ifelse(overall_pair_types_index$Species2 == "Escherichia coli" & overall_pair_types_index$Species_ST2 == "Escherichia coli ST 131","Escherichia coli ST 131","Escherichia coli Non-ST 131"))
+                                          ifelse(overall_pair_types_index$Species2 == "Escherichia coli" & overall_pair_types_index$Species_ST2 == "Escherichia coli ST 131","Escherichia coli ST131","Escherichia coli Non-ST131"))
 
 groups <- sort(unique(overall_pair_types_index$group1))
  
