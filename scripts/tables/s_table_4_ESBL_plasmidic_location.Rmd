@@ -83,4 +83,3 @@ ft
 save_as_docx(ft, 
              path = "./tables/s_table_4_ESBL_proportion_plasmidic.docx")
 ```
-
